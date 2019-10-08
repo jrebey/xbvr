@@ -4,6 +4,8 @@ ENV HOME=/home/gitpod
 WORKDIR $HOME
 USER gitpod
 
+RUN pip3 install sqlite-web
+
 ENV GO_VERSION=1.12 \
     GOPATH=$HOME/go-packages \
     GOROOT=$HOME/go

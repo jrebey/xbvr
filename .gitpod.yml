@@ -3,10 +3,17 @@ image:
 tasks:
   - name: Continuous Build
     command: cd /workspace/xbvr && modd
+  - name: SQLite-web
+    init: sleep 1 && while [ -f /home/gitpod/.config/xbvr/main.db ]; do sleep 1; done
+    command: sqlite_web --no-browser --read-only /home/gitpod/.config/xbvr/main.db
 ports:
+  - port: 8080
+    onOpen: open-preview
   - port: 9999
     onOpen: open-preview
   - port: 1338
+    onOpen: ignore
+  - port: 1900
     onOpen: ignore
   - port: 9998
     onOpen: ignore
