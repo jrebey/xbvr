@@ -1,37 +1,46 @@
 <template>
   <div>
     <div class="field">
-      <label class="label">Cover size</label>
-      <input type=range v-model="cardSize" min=1 max=3>
-    </div>
-
-    <div class="field">
-      <label class="label">State</label>
+      <label class="label">{{$t("State")}}</label>
       <div class="control is-expanded">
         <div class="select is-fullwidth">
           <select v-model="dlState">
-            <option value="any">Any</option>
-            <option value="available">Available right now</option>
-            <option value="downloaded">Downloaded</option>
-            <option value="missing">Not downloaded</option>
+            <option value="any">{{$t("Any")}}</option>
+            <option value="available">{{$t("Available right now")}}</option>
+            <option value="downloaded">{{$t("Downloaded")}}</option>
+            <option value="missing">{{$t("Not downloaded")}}</option>
           </select>
         </div>
       </div>
     </div>
 
-    <label class="label">Sort by</label>
+    <div class="field">
+      <label class="label">List</label>
+      <b-field>
+        <b-checkbox-button v-model="lists" native-value="watchlist" type="is-primary">
+          <b-icon pack="mdi" icon="calendar-check" size="is-small"/>
+          <span>{{$t("Watchlist")}}</span>
+        </b-checkbox-button>
+        <b-checkbox-button v-model="lists" native-value="favourite" type="is-danger">
+          <b-icon pack="mdi" icon="heart" size="is-small"/>
+          <span>{{$t("Favourite")}}</span>
+        </b-checkbox-button>
+      </b-field>
+    </div>
+
+    <label class="label">{{$t("Sort by")}}</label>
     <div class="field has-addons">
       <div class="control is-expanded">
         <div class="select is-fullwidth">
           <select v-model="sort">
-            <option value="release_desc">↓ Release date</option>
-            <option value="release_asc">↑ Release date</option>
-            <option value="added_desc">↓ Date added</option>
-            <option value="added_asc">↑ Date added</option>
-            <option value="rating_desc">↓ Rating</option>
-            <option value="rating_asc">↑ Rating</option>
-            <option value="last_opened">↻ Recently viewed</option>
-            <option value="random">↯ Random</option>
+            <option value="release_desc">↓ {{$t("Release date")}}</option>
+            <option value="release_asc">↑ {{$t("Release date")}}</option>
+            <option value="added_desc">↓ {{$t("Date added")}}</option>
+            <option value="added_asc">↑ {{$t("Date added")}}</option>
+            <option value="rating_desc">↓ {{$t("Rating")}}</option>
+            <option value="rating_asc">↑ {{$t("Rating")}}</option>
+            <option value="last_opened">↻ {{$t("Recently viewed")}}}</option>
+            <option value="random">↯ {{$t("Random")}}</option>
           </select>
         </div>
       </div>
@@ -42,9 +51,9 @@
       <div class="control is-expanded">
         <div class="select is-fullwidth">
           <select v-model="isWatched">
-            <option value="">Everything</option>
-            <option value="1">Watched</option>
-            <option value="0">Unwatched</option>
+            <option :value="null">Everything</option>
+            <option :value="true">Watched</option>
+            <option :value="false">Unwatched</option>
           </select>
         </div>
       </div>
@@ -102,6 +111,14 @@
       }
     },
     methods: {
+      reload() {
+        this.$router.push({
+          name: 'scenes',
+          query: {
+            q: this.$store.getters['sceneList/filterQueryParams']
+          }
+        });
+      },
       getFilteredCast(text) {
         this.filteredCast = this.filters.cast.filter((option) => {
           return option.toString().toLowerCase().indexOf(text.toLowerCase()) >= 0
@@ -119,19 +136,20 @@
       },
       clearReleaseMonth() {
         this.$store.state.sceneList.filters.releaseMonth = "";
-        this.$store.dispatch("sceneList/load", {offset: 0});
+        this.reload();
       },
     },
     computed: {
       filters() {
         return this.$store.state.sceneList.filterOpts;
       },
-      cardSize: {
+      lists: {
         get() {
-          return this.$store.state.sceneList.filters.cardSize;
+          return this.$store.state.sceneList.filters.lists;
         },
         set(value) {
-          this.$store.state.sceneList.filters.cardSize = value;
+          this.$store.state.sceneList.filters.lists = value;
+          this.reload();
         }
       },
       dlState: {
@@ -143,25 +161,24 @@
 
           switch (this.$store.state.sceneList.filters.dlState) {
             case "any":
-              this.$store.state.sceneList.filters.isAvailable = "";
-              this.$store.state.sceneList.filters.isAccessible = "";
+              this.$store.state.sceneList.filters.isAvailable = null;
+              this.$store.state.sceneList.filters.isAccessible = null;
               break;
             case "available":
-              this.$store.state.sceneList.filters.isAvailable = "1";
-              this.$store.state.sceneList.filters.isAccessible = "1";
+              this.$store.state.sceneList.filters.isAvailable = true;
+              this.$store.state.sceneList.filters.isAccessible = true;
               break;
             case "downloaded":
-              this.$store.state.sceneList.filters.isAvailable = "1";
-              this.$store.state.sceneList.filters.isAccessible = "";
+              this.$store.state.sceneList.filters.isAvailable = true;
+              this.$store.state.sceneList.filters.isAccessible = null;
               break;
             case "missing":
-              this.$store.state.sceneList.filters.isAvailable = "0";
-              this.$store.state.sceneList.filters.isAccessible = "";
+              this.$store.state.sceneList.filters.isAvailable = false;
+              this.$store.state.sceneList.filters.isAccessible = null;
               break;
           }
 
-          this.$store.dispatch("sceneList/load", {offset: 0});
-          this.$store.dispatch("sceneList/filters");
+          this.reload();
         }
       },
       releaseMonth: {
@@ -170,7 +187,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.releaseMonth = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
       cast: {
@@ -179,7 +196,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.cast = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
       sites: {
@@ -188,7 +205,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.sites = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
       tags: {
@@ -197,7 +214,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.tags = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
       sort: {
@@ -206,7 +223,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.sort = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
       isWatched: {
@@ -215,7 +232,7 @@
         },
         set(value) {
           this.$store.state.sceneList.filters.isWatched = value;
-          this.$store.dispatch("sceneList/load", {offset: 0});
+          this.reload();
         }
       },
     }

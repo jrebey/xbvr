@@ -1,16 +1,16 @@
 package scrape
 
 import (
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/gocolly/colly"
 	"github.com/nleeper/goment"
 	"github.com/thoas/go-funk"
+	"github.com/xbapps/xbvr/pkg/models"
 )
 
-func ScrapeR18(knownScenes []string, out *[]ScrapedScene, queryString string) error {
+func ScrapeR18(knownScenes []string, out *[]models.ScrapedScene, queryString string) error {
 	siteCollector := colly.NewCollector(
 		colly.AllowedDomains("www.r18.com"),
 		// colly.CacheDir(siteCacheDir),
@@ -32,7 +32,7 @@ func ScrapeR18(knownScenes []string, out *[]ScrapedScene, queryString string) er
 	})
 
 	sceneCollector.OnHTML(`html`, func(e *colly.HTMLElement) {
-		sc := ScrapedScene{}
+		sc := models.ScrapedScene{}
 		sc.SceneType = "VR"
 		sc.Studio = "JAVR"
 		sc.HomepageURL = strings.Split(e.Request.URL.String(), "?")[0]
@@ -80,10 +80,23 @@ func ScrapeR18(knownScenes []string, out *[]ScrapedScene, queryString string) er
 		})
 
 		// Scene ID
-		e.ForEach(`div.product-details dt:contains("DVD ID")+dd`, func(id int, e *colly.HTMLElement) {
-			sc.SceneID = strings.TrimSpace(e.Text)
-			sc.SiteID = strings.TrimSpace(e.Text)
+		var contentID string
+		e.ForEach(`div.product-details dt:contains("Content ID")+dd`, func(id int, e *colly.HTMLElement) {
+			contentID = strings.TrimSpace(e.Text)
 		})
+
+		var dvdID string
+		e.ForEach(`div.product-details dt:contains("DVD ID")+dd`, func(id int, e *colly.HTMLElement) {
+			dvdID = strings.TrimSpace(e.Text)
+		})
+
+		if dvdID == "----" {
+			sc.SceneID = contentID
+			sc.SiteID = contentID
+		} else {
+			sc.SceneID = dvdID
+			sc.SiteID = dvdID
+		}
 
 		sc.Tags = append(sc.Tags, "JAVR")
 		*out = append(*out, sc)
@@ -92,7 +105,7 @@ func ScrapeR18(knownScenes []string, out *[]ScrapedScene, queryString string) er
 	siteCollector.OnHTML(`html`, func(e *colly.HTMLElement) {
 		sceneURL := ""
 
-		e.ForEach(`ul.cmn-list-product01 li a`, func(id int, e *colly.HTMLElement) {
+		e.ForEach(`li.item-list a:not([class])`, func(id int, e *colly.HTMLElement) {
 			if id == 0 {
 				sceneURL = strings.Split(e.Attr("href"), "?")[0]
 			} else {

@@ -12,7 +12,7 @@
 
 <p align="center">
     <strong>
-        <a href="https://feedback.xbvr.app/">Suggestions</a>
+        <a href="https://github.com/xbapps/xbvr/issues">Suggestions</a>
         •
         <a href="https://discord.gg/wdCHXAG">Discord</a>
     </strong>
@@ -42,9 +42,16 @@ App is also available in form of Docker image, which makes it possible to run in
 
 To run this container in docker:
 
-```docker run --name=xbvr --net=host -p 9999:9999 --restart=always --mount type=bind,source=/path/to/your/videos,target=/videos,readonly xbapps/xbvr:latest```
+```
+docker run -t --name=xbvr --net=host --restart=always \
+   --mount type=bind,source=/path/to/your/videos,target=/videos,readonly \
+   --mount source=xbvr-config,target=/root/.config/ \
+   xbapps/xbvr:latest
+```
 
 Adding `-d` to the docker command will run the container in the background.
+
+In docker, your videos will be mounted at /videos and you should add this path in Options -> Folders.
 
 Please note that during the first run XBVR automatically installs `ffprobe` and `ffmpeg` codecs from [ffbinaries site](https://ffbinaries.com/downloads).
 
@@ -59,8 +66,6 @@ When it's all done, you should see your media not only in web UI, but also throu
 Enjoy!
 
 ## Questions & Suggestions
-
-Submit and vote on features at [Feedback site](https://feedback.xbvr.app/).
 
 Ask your questions and suggest features on [Discord](https://discord.gg/wdCHXAG).
 
@@ -82,11 +87,13 @@ This project is configured for use in Gitpod. It will provide you with a pre-bui
 
 When the workspace loads, modd runs and will build and start XBVR automatically. Every time you make a change to a file, modd will automatically compile the relevant code.
 
-Once XBVR is compiled and starts, a preview panel will open in the IDE. As you modify files, the preview panel will reload with the latest changes.
+Once XBVR is compiled and starts, a preview panel will open in the IDE. As you modify go files, the preview panel will reload with the latest changes. If you make changes to Vue, you'll need to reload the browser to load the updated JavaScript.
 
 Currently, it's only possible to test XBVR core and Browser applications using Gitpod. Because DLNA requires a local network, you won't be able to connect to the DLNA server running in Gitpod. For most people, this is fine.
 
 sqlite3 is included in the terminal. The XBVR database is located at /home/gitpod/.config/xbvr/main.db
+
+sqlite-web is also included. To browse the db, you can run `sqlite_web /home/gitpod/.config/xbvr/main.db`.
 
 Gitpod has GitHub integration and, once authorized, can fork this repo into your account, push/pull changes, and create pull requests.
 

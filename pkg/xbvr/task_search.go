@@ -3,20 +3,27 @@ package xbvr
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/sirupsen/logrus"
+	"github.com/xbapps/xbvr/pkg/common"
+	"github.com/xbapps/xbvr/pkg/models"
 )
 
 type Index struct {
 	bleve bleve.Index
 }
 
+type SceneIndexed struct {
+	Fulltext string `json:"fulltext"`
+}
+
 func NewIndex(name string) *Index {
 	i := new(Index)
 
-	path := filepath.Join(indexDir, name)
+	path := filepath.Join(common.IndexDirV2, name)
 
 	mapping := bleve.NewIndexMapping()
 	idx, err := bleve.NewUsing(path, mapping, scorch.Name, scorch.Name, nil)
@@ -28,62 +35,51 @@ func NewIndex(name string) *Index {
 	return i
 }
 
-func (i *Index) GetScene(id string) (Scene, error) {
-	if _, err := i.bleve.Document(id); err != nil {
-		return Scene{}, err
+func (i *Index) Exist(id string) bool {
+	d, err := i.bleve.Document(id)
+	if err != nil || d == nil {
+		return false
 	}
-
-	data, err := i.bleve.GetInternal(i.formatInternalKey(id))
-	if err != nil {
-		return Scene{}, err
-	}
-
-	s := Scene{}
-	err = s.FromJSON(data)
-	return s, err
+	return true
 }
 
-func (i *Index) PutScene(scene Scene) error {
-	scene.Fulltext = fmt.Sprintf("%v %v %v", scene.Title, scene.Site, scene.Synopsis)
-
-	databytes, err := scene.ToJSON()
-	if err != nil {
-		return err
+func (i *Index) PutScene(scene models.Scene) error {
+	cast := ""
+	castConcat := ""
+	for _, c := range scene.Cast {
+		cast = cast + " " + c.Name
+		castConcat = castConcat + " " + strings.Replace(c.Name, " ", "", -1)
 	}
 
-	if err = i.bleve.Index(scene.SceneID, scene); err != nil {
-		return err
+	si := SceneIndexed{
+		Fulltext: fmt.Sprintf("%v %v %v %v %v %v", scene.SceneID, scene.Title, scene.Site, scene.Synopsis, cast, castConcat),
 	}
-
-	if err = i.bleve.SetInternal(i.formatInternalKey(scene.SceneID), databytes); err != nil {
-		i.bleve.Delete(scene.SceneID)
+	if err := i.bleve.Index(scene.SceneID, si); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (i *Index) formatInternalKey(id string) []byte {
-	return []byte(fmt.Sprintf("raw:document:%s", id))
-}
-
 func SearchIndex() {
-	if !CheckLock("index") {
-		CreateLock("index")
+	if !models.CheckLock("index") {
+		models.CreateLock("index")
 
 		tlog := log.WithFields(logrus.Fields{"task": "scrape"})
 
 		idx := NewIndex("scenes")
 
-		db, _ := GetDB()
+		db, _ := models.GetDB()
 		defer db.Close()
 
 		total := 0
 		offset := 0
 		current := 0
-		var scenes []Scene
-		tx := db.Model(Scene{}).Preload("Cast").Preload("Tags")
+		var scenes []models.Scene
+		tx := db.Model(models.Scene{}).Preload("Cast").Preload("Tags")
 		tx.Count(&total)
+
+		tlog.Infof("Building search index...")
 
 		for {
 			tx.Offset(offset).Limit(100).Find(&scenes)
@@ -92,16 +88,15 @@ func SearchIndex() {
 			}
 
 			for i := range scenes {
-				if _, err := idx.GetScene(scenes[i].SceneID); err != nil {
+				if !idx.Exist(scenes[i].SceneID) {
 					err := idx.PutScene(scenes[i])
 					if err != nil {
 						log.Error(err)
 					}
 				}
 				current = current + 1
-
-				tlog.Infof("Indexing scene %v of %v", current, total)
 			}
+			tlog.Infof("Indexed %v/%v scenes", current, total)
 
 			offset = offset + 100
 		}
@@ -110,6 +105,6 @@ func SearchIndex() {
 
 		tlog.Infof("Search index built!")
 
-		RemoveLock("index")
+		models.RemoveLock("index")
 	}
 }

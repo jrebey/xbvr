@@ -1,10 +1,12 @@
 package xbvr
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -17,13 +19,15 @@ import (
 	"github.com/peterbourgon/diskv"
 	"github.com/rs/cors"
 	"github.com/xbapps/xbvr/pkg/assets"
+	"github.com/xbapps/xbvr/pkg/common"
+	"github.com/xbapps/xbvr/pkg/models"
 	"willnorris.com/go/imageproxy"
 )
 
 var (
-	DEBUG          = os.Getenv("DEBUG")
-	httpAddr       = "0.0.0.0:9999"
-	wsAddr         = "0.0.0.0:9998"
+	DEBUG          = common.DEBUG
+	httpAddr       = common.HttpAddr
+	wsAddr         = common.WsAddr
 	currentVersion = ""
 )
 
@@ -31,14 +35,14 @@ func StartServer(version, commit, branch, date string) {
 	currentVersion = version
 
 	// Remove old locks
-	RemoveLock("index")
-	RemoveLock("scrape")
-	RemoveLock("update-scenes")
+	models.RemoveLock("index")
+	models.RemoveLock("scrape")
+	models.RemoveLock("update-scenes")
 
 	go CheckDependencies()
-	CheckVolumes()
+	models.CheckVolumes()
 
-	InitSites()
+	models.InitSites()
 
 	// API endpoints
 	ws := new(restful.WebService)
@@ -97,7 +101,7 @@ func StartServer(version, commit, branch, date string) {
 	}
 
 	// Imageproxy
-	p := imageproxy.NewProxy(nil, diskCache(filepath.Join(appDir, "imageproxy")))
+	p := imageproxy.NewProxy(nil, diskCache(filepath.Join(common.AppDir, "imageproxy")))
 	p.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
 	http.Handle("/img/", http.StripPrefix("/img", p))
 
@@ -116,7 +120,7 @@ func StartServer(version, commit, branch, date string) {
 		},
 	}
 
-	wampRouter, err := router.NewRouter(routerConfig, log)
+	wampRouter, err := router.NewRouter(routerConfig, &log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,17 +148,27 @@ func StartServer(version, commit, branch, date string) {
 	})
 
 	// Attach logrus hook
-	wampHook := NewWampHook()
+	wampHook := common.NewWampHook()
 	log.AddHook(wampHook)
-
 
 	log.Infof("XBVR %v (build date %v) starting...", version, date)
 
 	// DMS
 	go StartDMS()
 
-	log.Infof("Web UI available at http://%v/", httpAddr)
-	log.Infof("Database file stored at %s", appDir)
+	// Cron
+	SetupCron()
+
+	addrs, _ := net.InterfaceAddrs()
+	ips := []string{}
+	for _, addr := range addrs {
+		ip, _ := addr.(*net.IPNet)
+		if ip.IP.To4() != nil {
+		ips = append(ips, fmt.Sprintf("http://%v:9999/", ip.IP))
+	}
+	}
+	log.Infof("Web UI available at %s", strings.Join(ips, ", "))
+	log.Infof("Database file stored at %s", common.AppDir)
 
 	if DEBUG == "" {
 		log.Fatal(http.ListenAndServe(httpAddr, handler))
