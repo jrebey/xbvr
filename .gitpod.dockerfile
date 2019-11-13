@@ -26,8 +26,8 @@ RUN go get -u -v \
 ENV GOPATH=/workspace/go \
   PATH=/workspace/go/bin:$PATH
 
-RUN pip install --no-cache-dir cython && \
-  pip install --no-cache-dir flask peewee sqlite-web
+RUN pip3 install --no-cache-dir cython && \
+  pip3 install --no-cache-dir flask peewee sqlite-web
 
 RUN git config --global alias.gofmt \
   '!echo $(git diff --cached --name-only --diff-filter=ACM | grep '.go$') | \
