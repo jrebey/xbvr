@@ -11,7 +11,7 @@ RUN export PATH=$(echo "$PATH" | sed -e 's|:/workspace/go/bin||' -e 's|:/home/gi
 ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 RUN GO111MODULE=on go get -u -v \
-  github.com/UnnoTed/fileb0x && \
+  github.com/UnnoTed/fileb0x \
   github.com/cortesi/modd/cmd/modd && \
   sudo rm -rf $GOPATH/src && \
   sudo rm -rf $GOPATH/pkg
@@ -21,5 +21,10 @@ ENV GOPATH=/workspace/go \
 
 RUN pip3 install --no-cache-dir cython && \
   pip3 install --no-cache-dir flask peewee sqlite-web
+
+RUN sudo apt-get update && sudo apt-get install -y \
+  gupnp-tools \
+  socat && \
+  sudo rm -rf /var/lib/apt/lists/*
 
 USER root
