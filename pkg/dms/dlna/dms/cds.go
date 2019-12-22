@@ -449,6 +449,7 @@ func (me *contentDirectoryService) Handle(action string, argsXML []byte, r *http
 			if obj.Path == "sites" {
 				data := XbaseGet()
 
+				sort.Strings(data.Sites)
 				for i := range data.Sites {
 					objs = append(objs, upnpav.Container{Object: upnpav.Object{
 						ID:         "sites/" + data.Sites[i],
@@ -477,6 +478,7 @@ func (me *contentDirectoryService) Handle(action string, argsXML []byte, r *http
 			if obj.Path == "tags" {
 				data := XbaseGet()
 
+				sort.Strings(data.Tags)
 				for i := range data.Tags {
 					objs = append(objs, upnpav.Container{Object: upnpav.Object{
 						ID:         "tags/" + data.Tags[i],
@@ -505,6 +507,7 @@ func (me *contentDirectoryService) Handle(action string, argsXML []byte, r *http
 			if obj.Path == "actors" {
 				data := XbaseGet()
 
+				sort.Strings(data.Actors)
 				for i := range data.Actors {
 					objs = append(objs, upnpav.Container{Object: upnpav.Object{
 						ID:         "actors/" + data.Actors[i],
