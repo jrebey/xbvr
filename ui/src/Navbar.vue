@@ -1,5 +1,5 @@
 <template>
-  <b-navbar :fixed-top="true" type="is-light">
+  <b-navbar :fixed-top="true" type="is-dark">
     <template slot="brand">
       <b-navbar-item>
         <h1 class="title">XBVR <small>{{currentVersion}}</small></h1>

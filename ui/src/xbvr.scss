@@ -26,6 +26,31 @@ $link: $primary;
 $link-invert: $primary-invert;
 $link-focus-border: $primary;
 
+$input-background-color: $grey-dark;
+$input-border-color: $grey-darker;
+$input-color: $grey-lighter;
+
 // Import Bulma and Buefy styles
+@import "~bulmaswatch/darkly/variables";
+
+$primary: $grey;
+$primary-invert: findColorInvert($primary);
+$colors: (
+    "white": ($white, $black),
+    "black": ($black, $white),
+    "light": ($light, $light-invert),
+    "dark": ($dark, $dark-invert),
+    "primary": ($primary, $primary-invert),
+    "info": ($info, $info-invert),
+    "success": ($success, $success-invert),
+    "warning": ($warning, $warning-invert),
+    "danger": ($danger, $danger-invert),
+    "twitter": ($twitter, $twitter-invert)
+);
+$switch-active-background-color: $grey-lighter;
+$progress-bar-background-color: $grey-darker;
+
 @import "~bulma";
+@import "~bulmaswatch/darkly/overrides";
+
 @import "~buefy/src/scss/buefy";
