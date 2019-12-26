@@ -42,9 +42,16 @@ App is also available in form of Docker image, which makes it possible to run in
 
 To run this container in docker:
 
-```docker run --name=xbvr --net=host -p 9999:9999 --restart=always --mount type=bind,source=/path/to/your/videos,target=/videos,readonly xbapps/xbvr:latest```
+```
+docker run -t --name=xbvr --net=host --restart=always \
+   --mount type=bind,source=/path/to/your/videos,target=/videos,readonly \
+   --mount source=xbvr-config,target=/root/.config/ \
+   xbapps/xbvr:latest
+```
 
 Adding `-d` to the docker command will run the container in the background.
+
+In docker, your videos will be mounted at /videos and you should add this path in Options -> Folders.
 
 Please note that during the first run XBVR automatically installs `ffprobe` and `ffmpeg` codecs from [ffbinaries site](https://ffbinaries.com/downloads).
 
@@ -70,7 +77,7 @@ Make sure you have following installed:
 - Node.js 10.x
 - Yarn 1.17.x
 - fileb0x (run `go get github.com/UnnoTed/fileb0x` outside project directory)
-- modd (run `go get github.com/cortesi/modd/cmd/modd` outside project directory)
+- modd (run `env GO111MODULE=on go get github.com/cortesi/modd/cmd/modd` outside project directory)
 
 Once all of the above is installed, running `modd` from project directory launches file-watchers providing livereload for both Go and JavaScript.
 
